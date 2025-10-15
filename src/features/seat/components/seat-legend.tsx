@@ -6,8 +6,8 @@ const legends = [
   { grade: 'SPECIAL', label: 'Special', color: 'bg-yellow-100 border-yellow-500', price: 250000 },
   { grade: 'PREMIUM', label: 'Premium', color: 'bg-blue-100 border-blue-500', price: 190000 },
   { grade: 'ADVANCED', label: 'Advanced', color: 'bg-green-100 border-green-500', price: 170000 },
-  { grade: 'REGULAR', label: 'Regular', color: 'bg-gray-100 border-gray-500', price: 140000 },
-  { grade: 'RESERVED', label: '예약됨', color: 'bg-gray-300 border-gray-400', price: null },
+  { grade: 'REGULAR', label: 'Regular', color: 'bg-orange-100 border-orange-500', price: 140000 },
+  { grade: 'RESERVED', label: '예약됨', color: 'bg-slate-400 border-slate-600', price: null },
 ];
 
 export function SeatLegend() {
