@@ -31,10 +31,6 @@ export const createHonoApp = () => {
   registerSeatRoutes(app);
   registerReservationRoutes(app);
 
-  // 디버깅용 라우트 목록 출력 (개발 환경)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🚀 Registered Hono routes:', app.routes.map(r => `${r.method} ${r.path}`));
-  }
 
   singletonApp = app;
 
