@@ -1,12 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { failure, success, type HandlerResult } from '@/backend/http/response';
-import { seatErrorCodes, type SeatServiceError } from './error';
+import { seatErrorCodes, type SeatErrorCode } from './error';
 import type { SeatListResponse } from './schema';
 
 export async function listSeats(
   supabase: SupabaseClient,
   concertId: string
-): Promise<HandlerResult<SeatListResponse, SeatServiceError, unknown>> {
+): Promise<HandlerResult<SeatListResponse, SeatErrorCode, unknown>> {
   try {
     // 좌석 조회
     const { data: seats, error: seatsError } = await supabase

@@ -6,6 +6,8 @@ export const reservationErrorCodes = {
   notFound: 'RESERVATION_NOT_FOUND',
 } as const;
 
+export type ReservationErrorCode = typeof reservationErrorCodes[keyof typeof reservationErrorCodes];
+
 export type ReservationServiceError =
   | { code: typeof reservationErrorCodes.fetchError; message: string }
   | { code: typeof reservationErrorCodes.createError; message: string }

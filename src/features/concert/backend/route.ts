@@ -1,9 +1,9 @@
 import type { Hono } from 'hono';
-import { respond, failure } from '@/backend/http/response';
+import { respond, failure, type ErrorResult } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
 import { listConcerts, getConcertById } from './service';
 import { ConcertParamsSchema } from './schema';
-import { concertErrorCodes } from './error';
+import { concertErrorCodes, type ConcertErrorCode } from './error';
 
 export const registerConcertRoutes = (app: Hono<AppEnv>) => {
   app.get('/concerts', async (c) => {
@@ -13,7 +13,8 @@ export const registerConcertRoutes = (app: Hono<AppEnv>) => {
     const result = await listConcerts(supabase);
 
     if (!result.ok) {
-      logger.error('Failed to fetch concerts', result.error.message);
+      const errorResult = result as ErrorResult<ConcertErrorCode, unknown>;
+      logger.error('Failed to fetch concerts', errorResult.error.message);
     }
 
     return respond(c, result);
@@ -42,7 +43,8 @@ export const registerConcertRoutes = (app: Hono<AppEnv>) => {
     const result = await getConcertById(supabase, parsedParams.data.id);
 
     if (!result.ok) {
-      logger.error('Failed to fetch concert detail', result.error.message);
+      const errorResult = result as ErrorResult<ConcertErrorCode, unknown>;
+      logger.error('Failed to fetch concert detail', errorResult.error.message);
     }
 
     return respond(c, result);

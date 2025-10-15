@@ -4,6 +4,8 @@ export const seatErrorCodes = {
   invalidParams: 'SEAT_INVALID_PARAMS',
 } as const;
 
+export type SeatErrorCode = typeof seatErrorCodes[keyof typeof seatErrorCodes];
+
 export type SeatServiceError =
   | { code: typeof seatErrorCodes.fetchError; message: string }
   | { code: typeof seatErrorCodes.notFound; message: string }

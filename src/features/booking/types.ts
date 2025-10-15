@@ -1,12 +1,6 @@
-export interface Seat {
-  id: string;
-  section: 'A' | 'B' | 'C' | 'D';
-  row: number;
-  column: number;
-  grade: 'SPECIAL' | 'PREMIUM' | 'ADVANCED' | 'REGULAR';
-  status: 'AVAILABLE' | 'RESERVED';
-  price: number;
-}
+import type { Seat } from '@/features/seat/lib/dto';
+
+export type { Seat };
 
 export interface BookingState {
   selectedConcertId: string | null;

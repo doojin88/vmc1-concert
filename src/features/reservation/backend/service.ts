@@ -1,13 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { failure, success, type HandlerResult } from '@/backend/http/response';
-import { reservationErrorCodes, type ReservationServiceError } from './error';
+import { reservationErrorCodes, type ReservationErrorCode } from './error';
 import type { CreateReservationInput, ReservationResponse } from './schema';
 
 export async function createReservation(
   supabase: SupabaseClient,
   input: CreateReservationInput
-): Promise<HandlerResult<ReservationResponse, ReservationServiceError, unknown>> {
+): Promise<HandlerResult<ReservationResponse, ReservationErrorCode, unknown>> {
   try {
     const passwordHash = await bcrypt.hash(input.password, 10);
 
@@ -51,7 +51,7 @@ export async function createReservation(
 export async function getReservationByNumber(
   supabase: SupabaseClient,
   reservationNumber: string
-): Promise<HandlerResult<ReservationResponse, ReservationServiceError, unknown>> {
+): Promise<HandlerResult<ReservationResponse, ReservationErrorCode, unknown>> {
   try {
     const { data, error } = await supabase
       .from('reservations')
@@ -78,13 +78,13 @@ export async function getReservationByNumber(
       return failure(404, reservationErrorCodes.notFound, 'Reservation not found');
     }
 
-    const concerts = data.concerts as {
+    const concerts = (data.concerts as any) as {
       name: string;
       date: string;
       venues: { name: string };
     };
 
-    const reservationSeats = data.reservation_seats as Array<{
+    const reservationSeats = (data.reservation_seats as any) as Array<{
       seats: {
         section: 'A' | 'B' | 'C' | 'D';
         row: number;
@@ -125,7 +125,7 @@ export async function getReservationByNumber(
 export async function lookupReservation(
   supabase: SupabaseClient,
   input: { phone_number: string; password: string }
-): Promise<HandlerResult<{ reservations: ReservationResponse[] }, ReservationServiceError, unknown>> {
+): Promise<HandlerResult<{ reservations: ReservationResponse[] }, ReservationErrorCode, unknown>> {
   try {
     // 1. 휴대폰번호로 예약 목록 조회
     const { data: reservations, error } = await supabase
@@ -180,13 +180,13 @@ export async function lookupReservation(
 
     // 3. 응답 데이터 변환
     const response = filteredReservations.map((reservation) => {
-      const concerts = reservation.concerts as {
+      const concerts = (reservation.concerts as any) as {
         name: string;
         date: string;
         venues: { name: string };
       };
 
-      const reservationSeats = reservation.reservation_seats as Array<{
+      const reservationSeats = (reservation.reservation_seats as any) as Array<{
         seats: {
           section: 'A' | 'B' | 'C' | 'D';
           row: number;

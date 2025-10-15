@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { failure, success, type HandlerResult } from '@/backend/http/response';
-import { concertErrorCodes, type ConcertServiceError } from './error';
+import { concertErrorCodes, type ConcertErrorCode } from './error';
 import type { ConcertListResponse, ConcertDetailResponse } from './schema';
 
 export async function listConcerts(
   supabase: SupabaseClient
-): Promise<HandlerResult<ConcertListResponse, ConcertServiceError, unknown>> {
+): Promise<HandlerResult<ConcertListResponse, ConcertErrorCode, unknown>> {
   try {
     const { data: concerts, error } = await supabase
       .from('concerts')
@@ -30,6 +30,8 @@ export async function listConcerts(
           .select('id, status')
           .eq('concert_id', concert.id);
 
+        const venueName = (concert.venues as any)?.name ?? 'Unknown Venue';
+
         if (seatsError || !seats) {
           // 좌석 데이터가 없으면 기본값 사용
           return {
@@ -37,7 +39,7 @@ export async function listConcerts(
             name: concert.name,
             date: concert.date,
             poster_url: concert.poster_url,
-            venue_name: (concert.venues as { name: string }).name,
+            venue_name: venueName,
             reserved_count: 0,
             total_seats: 320, // 4구역 × 4행 × 20열
           };
@@ -48,7 +50,7 @@ export async function listConcerts(
           name: concert.name,
           date: concert.date,
           poster_url: concert.poster_url,
-          venue_name: (concert.venues as { name: string }).name,
+          venue_name: venueName,
           reserved_count: seats.filter((s) => s.status === 'RESERVED').length,
           total_seats: seats.length,
         };
@@ -68,7 +70,7 @@ export async function listConcerts(
 export async function getConcertById(
   supabase: SupabaseClient,
   concertId: string
-): Promise<HandlerResult<ConcertDetailResponse, ConcertServiceError, unknown>> {
+): Promise<HandlerResult<ConcertDetailResponse, ConcertErrorCode, unknown>> {
   try {
     // 콘서트 및 공연장 정보 조회
     const { data: concert, error: concertError } = await supabase
@@ -95,7 +97,7 @@ export async function getConcertById(
       return failure(404, concertErrorCodes.notFound, 'Concert not found');
     }
 
-    const venue = concert.venues as {
+    const venue = (concert.venues as any) as {
       id: string;
       name: string;
       address: string;

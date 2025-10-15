@@ -1,9 +1,9 @@
 import type { Hono } from 'hono';
-import { respond, failure } from '@/backend/http/response';
+import { respond, failure, type ErrorResult } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
 import { CreateReservationSchema, ReservationParamsSchema, LookupReservationSchema } from './schema';
 import { createReservation, getReservationByNumber, lookupReservation } from './service';
-import { reservationErrorCodes } from './error';
+import { reservationErrorCodes, type ReservationErrorCode } from './error';
 
 export const registerReservationRoutes = (app: Hono<AppEnv>) => {
   app.post('/reservations', async (c) => {
@@ -28,7 +28,8 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
     const result = await createReservation(supabase, parsedBody.data);
 
     if (!result.ok) {
-      logger.error('Failed to create reservation', result.error.message);
+      const errorResult = result as ErrorResult<ReservationErrorCode, unknown>;
+      logger.error('Failed to create reservation', errorResult.error.message);
     }
 
     return respond(c, result);
@@ -60,7 +61,8 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
     );
 
     if (!result.ok) {
-      logger.error('Failed to fetch reservation', result.error.message);
+      const errorResult = result as ErrorResult<ReservationErrorCode, unknown>;
+      logger.error('Failed to fetch reservation', errorResult.error.message);
     }
 
     return respond(c, result);
@@ -85,10 +87,14 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
-    const result = await lookupReservation(supabase, parsedBody.data);
+    const result = await lookupReservation(supabase, {
+      phone_number: parsedBody.data.phone_number,
+      password: parsedBody.data.password,
+    });
 
     if (!result.ok) {
-      logger.error('Failed to lookup reservation', result.error.message);
+      const errorResult = result as ErrorResult<ReservationErrorCode, unknown>;
+      logger.error('Failed to lookup reservation', errorResult.error.message);
     }
 
     return respond(c, result);
