@@ -1,2 +1,9 @@
-export type { Concert, ConcertListResponse } from '../backend/schema';
+export type {
+  Concert,
+  ConcertListResponse,
+  ConcertDetail,
+  ConcertDetailResponse,
+  SeatGrade,
+  Venue,
+} from '../backend/schema';
 
