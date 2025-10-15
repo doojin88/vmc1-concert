@@ -3,5 +3,6 @@ export type {
   ReservationResponse,
   LookupReservationInput,
   ReservationListResponse,
+  CancelReservationInput,
 } from '../backend/schema';
 

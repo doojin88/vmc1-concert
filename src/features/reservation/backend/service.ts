@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { failure, success, type HandlerResult } from '@/backend/http/response';
 import { reservationErrorCodes, type ReservationErrorCode } from './error';
-import type { CreateReservationInput, ReservationResponse } from './schema';
+import type { CreateReservationInput, ReservationResponse, CancelReservationInput } from './schema';
 
 export async function createReservation(
   supabase: SupabaseClient,
@@ -149,6 +149,7 @@ export async function lookupReservation(
         )
       `)
       .eq('phone_number', input.phone_number)
+      .eq('status', 'CONFIRMED')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -220,6 +221,79 @@ export async function lookupReservation(
     return failure(
       500,
       reservationErrorCodes.fetchError,
+      err instanceof Error ? err.message : 'Unknown error'
+    );
+  }
+}
+
+export async function cancelReservation(
+  supabase: SupabaseClient,
+  input: CancelReservationInput
+): Promise<HandlerResult<{ message: string }, ReservationErrorCode, unknown>> {
+  try {
+    // 1. 예약 정보 조회 및 비밀번호 검증
+    const { data: reservation, error: fetchError } = await supabase
+      .from('reservations')
+      .select(`
+        id,
+        reservation_number,
+        phone_number,
+        password_hash,
+        status,
+        concerts!inner(date)
+      `)
+      .eq('reservation_number', input.reservation_number)
+      .eq('phone_number', input.phone_number)
+      .single();
+
+    if (fetchError || !reservation) {
+      return failure(404, reservationErrorCodes.notFound, '예약 정보를 찾을 수 없습니다');
+    }
+
+    // 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(input.password, reservation.password_hash);
+    if (!isPasswordValid) {
+      return failure(401, reservationErrorCodes.invalidCredentials, '비밀번호가 일치하지 않습니다');
+    }
+
+    // 예약 상태 확인
+    if (reservation.status !== 'CONFIRMED') {
+      return failure(400, reservationErrorCodes.invalidStatus, '이미 취소되었거나 유효하지 않은 예약입니다');
+    }
+
+    // 콘서트 날짜 확인 (24시간 이내 취소 불가)
+    const concerts = (reservation.concerts as any) as {
+      date: string;
+    };
+    const concertDate = new Date(concerts.date);
+    const now = new Date();
+    const hoursUntilConcert = (concertDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursUntilConcert <= 24) {
+      return failure(400, reservationErrorCodes.cancelNotAllowed, '콘서트 24시간 전부터는 취소가 불가능합니다');
+    }
+
+    // 2. 예약 취소 트랜잭션 실행
+    const { data: result, error: rpcError } = await supabase.rpc(
+      'cancel_reservation_transaction',
+      {
+        p_reservation_number: input.reservation_number,
+      }
+    );
+
+    if (rpcError || !result) {
+      return failure(
+        500,
+        reservationErrorCodes.cancelError,
+        rpcError?.message || '예약 취소에 실패했습니다'
+      );
+    }
+
+    return success({ message: '예약이 성공적으로 취소되었습니다' });
+  } catch (err) {
+    return failure(
+      500,
+      reservationErrorCodes.cancelError,
       err instanceof Error ? err.message : 'Unknown error'
     );
   }

@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
 import { respond, failure, type ErrorResult } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
-import { CreateReservationSchema, ReservationParamsSchema, LookupReservationSchema } from './schema';
-import { createReservation, getReservationByNumber, lookupReservation } from './service';
+import { CreateReservationSchema, ReservationParamsSchema, LookupReservationSchema, CancelReservationSchema } from './schema';
+import { createReservation, getReservationByNumber, lookupReservation, cancelReservation } from './service';
 import { reservationErrorCodes, type ReservationErrorCode } from './error';
 
 export const registerReservationRoutes = (app: Hono<AppEnv>) => {
@@ -95,6 +95,35 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
     if (!result.ok) {
       const errorResult = result as ErrorResult<ReservationErrorCode, unknown>;
       logger.error('Failed to lookup reservation', errorResult.error.message);
+    }
+
+    return respond(c, result);
+  });
+
+  app.delete('/reservations', async (c) => {
+    const body = await c.req.json();
+    const parsedBody = CancelReservationSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return respond(
+        c,
+        failure(
+          400,
+          reservationErrorCodes.invalidParams,
+          'Invalid request body',
+          parsedBody.error.format()
+        )
+      );
+    }
+
+    const supabase = getSupabase(c);
+    const logger = getLogger(c);
+
+    const result = await cancelReservation(supabase, parsedBody.data);
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<ReservationErrorCode, unknown>;
+      logger.error('Failed to cancel reservation', errorResult.error.message);
     }
 
     return respond(c, result);

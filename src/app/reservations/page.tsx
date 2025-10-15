@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { ReservationLookupForm } from '@/features/reservation/components/reservation-lookup-form';
 import { ReservationDetail } from '@/features/reservation/components/reservation-detail';
+import { useToast } from '@/hooks/use-toast';
 import type { ReservationListResponse } from '@/features/reservation/lib/dto';
 
 export default function ReservationsPage() {
   const [lookupResult, setLookupResult] = useState<ReservationListResponse | null>(null);
+  const { toast } = useToast();
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -20,7 +22,16 @@ export default function ReservationsPage() {
 
         {/* 조회 결과 */}
         {lookupResult && (
-          <ReservationDetail reservations={lookupResult.reservations} />
+          <ReservationDetail 
+            reservations={lookupResult.reservations} 
+            onReservationCanceled={() => {
+              setLookupResult(null);
+              toast({
+                title: "예약 취소 완료",
+                description: "예약이 성공적으로 취소되었습니다.",
+              });
+            }}
+          />
         )}
       </div>
     </div>

@@ -1,16 +1,20 @@
 'use client';
 
-import { Calendar, MapPin, User, Phone, CreditCard, Hash } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, MapPin, User, Phone, CreditCard, Hash, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { formatConcertDate, formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { ReservationResponse } from '../lib/dto';
+import { CancelReservationDialog } from './cancel-reservation-dialog';
 
 interface ReservationDetailProps {
   reservations: ReservationResponse[];
+  onReservationCanceled?: () => void;
 }
 
 const gradeLabels = {
@@ -20,10 +24,22 @@ const gradeLabels = {
   REGULAR: 'Regular',
 };
 
-export function ReservationDetail({ reservations }: ReservationDetailProps) {
+export function ReservationDetail({ reservations, onReservationCanceled }: ReservationDetailProps) {
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<ReservationResponse | null>(null);
+
   if (reservations.length === 0) {
     return null;
   }
+
+  const handleCancelClick = (reservation: ReservationResponse) => {
+    setSelectedReservation(reservation);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelSuccess = () => {
+    onReservationCanceled?.();
+  };
 
   return (
     <div className="space-y-6">
@@ -125,10 +141,33 @@ export function ReservationDetail({ reservations }: ReservationDetailProps) {
                   {formatPrice(reservation.total_amount)}
                 </span>
               </div>
+
+              {/* 예약 취소 버튼 */}
+              <div className="pt-4">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleCancelClick(reservation)}
+                  className="w-full"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  예약 취소
+                </Button>
+              </div>
             </CardContent>
           </Card>
         );
       })}
+
+      {/* 취소 다이얼로그 */}
+      {selectedReservation && (
+        <CancelReservationDialog
+          reservation={selectedReservation}
+          isOpen={cancelDialogOpen}
+          onClose={() => setCancelDialogOpen(false)}
+          onSuccess={handleCancelSuccess}
+        />
+      )}
     </div>
   );
 }
