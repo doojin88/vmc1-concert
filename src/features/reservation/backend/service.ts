@@ -122,3 +122,106 @@ export async function getReservationByNumber(
   }
 }
 
+export async function lookupReservation(
+  supabase: SupabaseClient,
+  input: { phone_number: string; password: string }
+): Promise<HandlerResult<{ reservations: ReservationResponse[] }, ReservationServiceError, unknown>> {
+  try {
+    // 1. 휴대폰번호로 예약 목록 조회
+    const { data: reservations, error } = await supabase
+      .from('reservations')
+      .select(`
+        id,
+        reservation_number,
+        customer_name,
+        phone_number,
+        password_hash,
+        total_amount,
+        status,
+        created_at,
+        concerts!inner(
+          name,
+          date,
+          venues!inner(name)
+        ),
+        reservation_seats!inner(
+          seats!inner(section, row, column, grade)
+        )
+      `)
+      .eq('phone_number', input.phone_number)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return failure(500, reservationErrorCodes.fetchError, error.message);
+    }
+
+    if (!reservations || reservations.length === 0) {
+      return failure(404, reservationErrorCodes.notFound, '예약 정보를 찾을 수 없습니다');
+    }
+
+    // 2. 비밀번호 검증
+    const validReservations = await Promise.all(
+      reservations.map(async (reservation) => {
+        const isPasswordValid = await bcrypt.compare(
+          input.password,
+          reservation.password_hash
+        );
+        return isPasswordValid ? reservation : null;
+      })
+    );
+
+    const filteredReservations = validReservations.filter(
+      (r): r is NonNullable<typeof r> => r !== null
+    );
+
+    if (filteredReservations.length === 0) {
+      return failure(404, reservationErrorCodes.notFound, '예약 정보를 찾을 수 없습니다');
+    }
+
+    // 3. 응답 데이터 변환
+    const response = filteredReservations.map((reservation) => {
+      const concerts = reservation.concerts as {
+        name: string;
+        date: string;
+        venues: { name: string };
+      };
+
+      const reservationSeats = reservation.reservation_seats as Array<{
+        seats: {
+          section: 'A' | 'B' | 'C' | 'D';
+          row: number;
+          column: number;
+          grade: 'SPECIAL' | 'PREMIUM' | 'ADVANCED' | 'REGULAR';
+        };
+      }>;
+
+      return {
+        reservation_number: reservation.reservation_number,
+        customer_name: reservation.customer_name,
+        phone_number: reservation.phone_number,
+        total_amount: reservation.total_amount,
+        created_at: reservation.created_at,
+        concert: {
+          name: concerts.name,
+          date: concerts.date,
+          venue_name: concerts.venues.name,
+        },
+        seats: reservationSeats.map((rs) => ({
+          section: rs.seats.section,
+          row: rs.seats.row,
+          column: rs.seats.column,
+          grade: rs.seats.grade,
+        })),
+      };
+    });
+
+    return success({ reservations: response });
+  } catch (err) {
+    return failure(
+      500,
+      reservationErrorCodes.fetchError,
+      err instanceof Error ? err.message : 'Unknown error'
+    );
+  }
+}
+

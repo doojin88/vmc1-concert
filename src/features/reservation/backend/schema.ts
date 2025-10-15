@@ -40,7 +40,22 @@ export const ReservationParamsSchema = z.object({
   number: z.string().min(1, 'Reservation number is required'),
 });
 
+export const LookupReservationSchema = z.object({
+  phone_number: z
+    .string()
+    .regex(/^01\d{8,9}$/, '올바른 휴대폰 번호 형식이 아닙니다'),
+  password: z
+    .string()
+    .regex(/^\d{4}$/, '비밀번호는 숫자 4자리여야 합니다'),
+});
+
+export const ReservationListResponseSchema = z.object({
+  reservations: z.array(ReservationResponseSchema),
+});
+
 export type CreateReservationInput = z.infer<typeof CreateReservationSchema>;
 export type ReservationResponse = z.infer<typeof ReservationResponseSchema>;
 export type ReservationParams = z.infer<typeof ReservationParamsSchema>;
+export type LookupReservationInput = z.infer<typeof LookupReservationSchema>;
+export type ReservationListResponse = z.infer<typeof ReservationListResponseSchema>;
 

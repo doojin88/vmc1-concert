@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
 import { respond, failure } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
-import { CreateReservationSchema, ReservationParamsSchema } from './schema';
-import { createReservation, getReservationByNumber } from './service';
+import { CreateReservationSchema, ReservationParamsSchema, LookupReservationSchema } from './schema';
+import { createReservation, getReservationByNumber, lookupReservation } from './service';
 import { reservationErrorCodes } from './error';
 
 export const registerReservationRoutes = (app: Hono<AppEnv>) => {
@@ -61,6 +61,34 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
 
     if (!result.ok) {
       logger.error('Failed to fetch reservation', result.error.message);
+    }
+
+    return respond(c, result);
+  });
+
+  app.post('/reservations/lookup', async (c) => {
+    const body = await c.req.json();
+    const parsedBody = LookupReservationSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return respond(
+        c,
+        failure(
+          400,
+          reservationErrorCodes.invalidParams,
+          'Invalid request body',
+          parsedBody.error.format()
+        )
+      );
+    }
+
+    const supabase = getSupabase(c);
+    const logger = getLogger(c);
+
+    const result = await lookupReservation(supabase, parsedBody.data);
+
+    if (!result.ok) {
+      logger.error('Failed to lookup reservation', result.error.message);
     }
 
     return respond(c, result);
