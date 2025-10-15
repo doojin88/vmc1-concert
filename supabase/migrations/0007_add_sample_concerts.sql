@@ -1,8 +1,6 @@
 -- Migration: Add 2 additional sample concerts
 -- Description: Adds BTS and NewJeans concert events to the existing venue
 
-BEGIN;
-
 -- 샘플 콘서트 2개 추가
 insert into public.concerts (venue_id, name, date, description, poster_url)
 select
@@ -25,10 +23,3 @@ select
 from public.venues v
 where v.name = 'KSPO DOME'
 on conflict do nothing;
-
-EXCEPTION
-  WHEN OTHERS THEN
-    RAISE NOTICE 'Error adding sample concerts: %', SQLERRM;
-    ROLLBACK;
-    RETURN;
-END;
