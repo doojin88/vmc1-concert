@@ -41,9 +41,9 @@ export function SeatCard({ seat }: SeatCardProps) {
         !isReserved && gradeColors[seat.grade],
         isSelected && 'ring-2 ring-primary ring-offset-1'
       )}
-      title={`${seat.section}구역 ${seat.row}행 ${seat.column}열`}
+      title={`${seat.section}구역 ${seat.column}열 ${seat.row}행`}
     >
-      {seat.column}
+      {seat.row}
     </button>
   );
 }
