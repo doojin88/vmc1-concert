@@ -14,3 +14,12 @@ export function formatConcertDate(date: string | Date): string {
 export function formatPrice(price: number): string {
   return price.toLocaleString('ko-KR') + '원';
 }
+
+export function validatePhoneNumber(phone: string): boolean {
+  return /^01\d{8,9}$/.test(phone);
+}
+
+export function formatPhoneNumberInput(value: string): string {
+  // 숫자만 추출
+  return value.replace(/\D/g, '');
+}
