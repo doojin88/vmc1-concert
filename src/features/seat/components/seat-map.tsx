@@ -24,7 +24,7 @@ export function SeatMap({ seats }: SeatMapProps) {
       <div className="text-center mb-6 py-2 bg-muted rounded">
         <span className="text-sm font-medium">무대</span>
       </div>
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-4 gap-4">
         {sections.map((section) => (
           <SeatSection
             key={section}
