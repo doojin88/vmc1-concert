@@ -1,0 +1,9 @@
+export const BOOKING_ACTIONS = {
+  SET_CONCERT: 'SET_CONCERT',
+  SELECT_SEAT: 'SELECT_SEAT',
+  DESELECT_SEAT: 'DESELECT_SEAT',
+  CLEAR_SELECTION: 'CLEAR_SELECTION',
+} as const;
+
+export type BookingActionType = typeof BOOKING_ACTIONS[keyof typeof BOOKING_ACTIONS];
+
