@@ -11,6 +11,11 @@ import type { AppEnv } from '@/backend/hono/context';
 let singletonApp: Hono<AppEnv> | null = null;
 
 export const createHonoApp = () => {
+  // 개발 환경에서는 싱글톤 캐시 무효화 (hot reload 지원)
+  if (process.env.NODE_ENV === 'development') {
+    singletonApp = null;
+  }
+
   if (singletonApp) {
     return singletonApp;
   }
