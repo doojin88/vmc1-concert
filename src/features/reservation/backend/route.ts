@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
 import { respond, failure } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
-import { CreateReservationSchema } from './schema';
-import { createReservation } from './service';
+import { CreateReservationSchema, ReservationParamsSchema } from './schema';
+import { createReservation, getReservationByNumber } from './service';
 import { reservationErrorCodes } from './error';
 
 export const registerReservationRoutes = (app: Hono<AppEnv>) => {
@@ -29,6 +29,38 @@ export const registerReservationRoutes = (app: Hono<AppEnv>) => {
 
     if (!result.ok) {
       logger.error('Failed to create reservation', result.error.message);
+    }
+
+    return respond(c, result);
+  });
+
+  app.get('/reservations/:number', async (c) => {
+    const parsedParams = ReservationParamsSchema.safeParse({
+      number: c.req.param('number'),
+    });
+
+    if (!parsedParams.success) {
+      return respond(
+        c,
+        failure(
+          400,
+          reservationErrorCodes.invalidParams,
+          'Invalid reservation number',
+          parsedParams.error.format()
+        )
+      );
+    }
+
+    const supabase = getSupabase(c);
+    const logger = getLogger(c);
+
+    const result = await getReservationByNumber(
+      supabase,
+      parsedParams.data.number
+    );
+
+    if (!result.ok) {
+      logger.error('Failed to fetch reservation', result.error.message);
     }
 
     return respond(c, result);

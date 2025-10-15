@@ -48,3 +48,77 @@ export async function createReservation(
   }
 }
 
+export async function getReservationByNumber(
+  supabase: SupabaseClient,
+  reservationNumber: string
+): Promise<HandlerResult<ReservationResponse, ReservationServiceError, unknown>> {
+  try {
+    const { data, error } = await supabase
+      .from('reservations')
+      .select(`
+        reservation_number,
+        customer_name,
+        phone_number,
+        total_amount,
+        created_at,
+        concerts!inner(
+          name,
+          date,
+          venues!inner(name)
+        ),
+        reservation_seats!inner(
+          seats!inner(section, row, column, grade)
+        )
+      `)
+      .eq('reservation_number', reservationNumber)
+      .eq('status', 'CONFIRMED')
+      .single();
+
+    if (error || !data) {
+      return failure(404, reservationErrorCodes.notFound, 'Reservation not found');
+    }
+
+    const concerts = data.concerts as {
+      name: string;
+      date: string;
+      venues: { name: string };
+    };
+
+    const reservationSeats = data.reservation_seats as Array<{
+      seats: {
+        section: 'A' | 'B' | 'C' | 'D';
+        row: number;
+        column: number;
+        grade: 'SPECIAL' | 'PREMIUM' | 'ADVANCED' | 'REGULAR';
+      };
+    }>;
+
+    const response: ReservationResponse = {
+      reservation_number: data.reservation_number,
+      customer_name: data.customer_name,
+      phone_number: data.phone_number,
+      total_amount: data.total_amount,
+      created_at: data.created_at,
+      concert: {
+        name: concerts.name,
+        date: concerts.date,
+        venue_name: concerts.venues.name,
+      },
+      seats: reservationSeats.map((rs) => ({
+        section: rs.seats.section,
+        row: rs.seats.row,
+        column: rs.seats.column,
+        grade: rs.seats.grade,
+      })),
+    };
+
+    return success(response);
+  } catch (err) {
+    return failure(
+      500,
+      reservationErrorCodes.fetchError,
+      err instanceof Error ? err.message : 'Unknown error'
+    );
+  }
+}
+
