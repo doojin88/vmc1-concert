@@ -20,7 +20,7 @@ export const createHonoApp = () => {
     return singletonApp;
   }
 
-  const app = new Hono<AppEnv>();
+  const app = new Hono<AppEnv>().basePath('/api');
 
   app.use('*', errorBoundary());
   app.use('*', withAppContext());
